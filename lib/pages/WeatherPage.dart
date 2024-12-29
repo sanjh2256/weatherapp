@@ -1,96 +1,66 @@
 import 'package:flutter/material.dart';
-import 'package:lottie/lottie.dart';
-
+import 'package:weatherapp/model/weatherservice.dart';
 import '../model/Weathermodel.dart';
-import '../model/weatherservice.dart';
 
 class WeatherPage extends StatefulWidget {
-  const WeatherPage({super.key});
-
   @override
-  State<WeatherPage> createState() => _WeatherPageState();
+  _WeatherPageState createState() => _WeatherPageState();
 }
 
 class _WeatherPageState extends State<WeatherPage> {
+  final Weatherservice weatherService = Weatherservice('fd6160f8683a473698692016242912');
+  Weather? weather;
 
-  //api key
-  final _weatherService = Weatherservice('56f1b0f02d4625840d80adce1dc3eab8');
-  Weather? _weather;
-
-
-  // fetch weather
-  _fetchWeather() async {
-    // get the current city
-    String cityname = await _weatherService.getCurrentCity();
-
-    // get weather for city
-    try{
-      final weather = await _weatherService.getWeather(cityname);
-      setState(() {
-        _weather = weather ;
-      });
-    }
-
-    // any error
-    catch (e){
-      print(e);
-    }
-  }
-
-
-  // weather animations
-  String getWeaatherAnimation(String? maincondition){
-    if (maincondition == null) return 'weatherassets/sunny.json';
-
-    switch(maincondition.toLowerCase()){
-      case 'clouds':
-        return 'weatherassets/clouds.json';
-      case 'sunny':
-        return 'weatherassets/sunny.json';
-      case 'snow':
-        return 'weatherassets/snow.json';
-      case 'thunderstrom':
-        return 'weatherassets/thunder.json';
-      case 'windy':
-        return 'weatherassets/windy.json';
-      default:
-        return 'weatherassets/sunny.json';
-
-    }
-  }
-
-
-  //init state
   @override
   void initState() {
     super.initState();
-
-    //fetch weather on startup
     _fetchWeather();
+  }
+
+  Future<void> _fetchWeather() async {
+    try {
+      String city = await weatherService.getCurrentCity();
+      Weather fetchedWeather = await weatherService.getWeather(city);
+      setState(() {
+        weather = fetchedWeather;
+      });
+    } catch (e) {
+      print('Error fetching weather: $e');
+    }
   }
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: Colors.grey[800],
-      body: Center(
+      appBar: AppBar(
+        title: Text('Weather App'),
+      ),
+      body: weather == null
+          ? Center(child: CircularProgressIndicator())
+          : Padding(
+        padding: const EdgeInsets.all(16.0),
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
+          crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            //city name
-            Text(_weather?.cityname ?? "loading city.."),
-
-            //animations
-          Lottie.asset(getWeaatherAnimation(_weather?.maincondition)),
-
-            //temperature
-            Text('${_weather?.temperature.round()}°C'),
-
-            //condition
-            Text(_weather?.maincondition?? "")
-          ],),
+            Text(
+              'City: ${weather!.cityName}',
+              style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold),
+            ),
+            SizedBox(height: 10),
+            Text(
+              'Temperature: ${weather!.temperature} °C',
+              style: TextStyle(fontSize: 18),
+            ),
+            SizedBox(height: 10),
+            Text(
+              'Condition: ${weather!.condition}',
+              style: TextStyle(fontSize: 18),
+            ),
+            SizedBox(height: 10),
+          ],
+        ),
       ),
     );
   }
 }
-
